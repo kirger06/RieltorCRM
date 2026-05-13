@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "+5sfV0C+8SQ=",
+  "dgSpecHash": "OweiH5rxD8A=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Вчеслав\\Source\\Repos\\RieltorCRM\\RieltorCRM\\RieltorCRM\\RieltorCRM.csproj",
+  "projectFilePath": "C:\\Users\\Вчеслав\\source\\repos\\RieltorCRM\\RieltorCRM\\RieltorCRM\\RieltorCRM.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Вчеслав\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",
     "C:\\Users\\Вчеслав\\.nuget\\packages\\azure.identity\\1.11.4\\azure.identity.1.11.4.nupkg.sha512",

@@ -9,10 +9,7 @@
   <ItemGroup>
     <Folder Include="frontend\src\components\" />
     <Folder Include="frontend\src\pages\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="RioterCRM.csproj" />
+    <Folder Include="migrations\" />
   </ItemGroup>
 
   <ItemGroup>

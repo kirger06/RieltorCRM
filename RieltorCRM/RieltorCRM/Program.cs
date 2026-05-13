@@ -68,7 +68,7 @@ builder.Services.AddSwaggerGen(c =>
         Description = "JWT Authorization header using the Bearer scheme",
         Name = "Authorization",
         In = ParameterLocation.Header,
-        Type = SecuritySchemeType.Http,  // ← Используйте Http вместо ApiKey
+        Type = SecuritySchemeType.Http,  
         Scheme = "Bearer",
         BearerFormat = "JWT"
     });
@@ -108,10 +108,9 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
-        context.Database.EnsureCreated();
-        // Если SeedData.Initialize асинхронный, нужно использовать .GetAwaiter().GetResult()
-        SeedData.Initialize(services).GetAwaiter().GetResult();
-        // ИЛИ сделайте SeedData.Initialize синхронным методом
+        await context.Database.MigrateAsync();  // ← миграции, не дублирует
+
+        await SeedData.Initialize(services);
     }
     catch (Exception ex)
     {
