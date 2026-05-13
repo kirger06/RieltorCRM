@@ -30,3 +30,9 @@ C:\Users\Вчеслав\Source\Repos\RieltorCRM\RieltorCRM\RieltorCRM\obj\Debug\
 C:\Users\Вчеслав\Source\Repos\RieltorCRM\RieltorCRM\RieltorCRM\obj\Debug\net8.0\RieltorCRM.pdb
 C:\Users\Вчеслав\Source\Repos\RieltorCRM\RieltorCRM\RieltorCRM\obj\Debug\net8.0\RieltorCRM.genruntimeconfig.cache
 C:\Users\Вчеслав\Source\Repos\RieltorCRM\RieltorCRM\RieltorCRM\obj\Debug\net8.0\ref\RieltorCRM.dll
+C:\Users\Вчеслав\Source\Repos\RieltorCRM\RieltorCRM\RieltorCRM\bin\Debug\net8.0\Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll
+C:\Users\Вчеслав\Source\Repos\RieltorCRM\RieltorCRM\RieltorCRM\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.dll
+C:\Users\Вчеслав\Source\Repos\RieltorCRM\RieltorCRM\RieltorCRM\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.Abstractions.dll
+C:\Users\Вчеслав\Source\Repos\RieltorCRM\RieltorCRM\RieltorCRM\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.Relational.dll
+C:\Users\Вчеслав\Source\Repos\RieltorCRM\RieltorCRM\RieltorCRM\obj\Debug\net8.0\RieltorCRM.csproj.AssemblyReference.cache
+C:\Users\Вчеслав\Source\Repos\RieltorCRM\RieltorCRM\RieltorCRM\obj\Debug\net8.0\RieltorCRM.csproj.Up2Date
