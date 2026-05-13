@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <Folder Include="backend\controllers\" />
-    <Folder Include="backend\routes\" />
     <Folder Include="frontend\src\components\" />
     <Folder Include="frontend\src\pages\" />
   </ItemGroup>
