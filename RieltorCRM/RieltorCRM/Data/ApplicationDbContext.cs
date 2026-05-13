@@ -7,14 +7,9 @@ namespace RieltorCRM.Data
 {
     public class ApplicationDbContext : IdentityDbContext<User, IdentityRole<int>, int>
     {
-        public ApplicationDbContext()
-        {
-        }
+        public ApplicationDbContext() { }
 
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-            : base(options)
-        {
-        }
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
         public DbSet<Property> Properties { get; set; } = null!;
         public DbSet<Deal> Deals { get; set; } = null!;
@@ -28,204 +23,263 @@ namespace RieltorCRM.Data
         {
             base.OnModelCreating(modelBuilder);
 
+     
 
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Id).ValueGeneratedOnAdd();
-
-               
+                entity.ToTable("AspNetUsers");
             });
 
             modelBuilder.Entity<IdentityRole<int>>(entity =>
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            });
-
-            modelBuilder.Entity<IdentityUserLogin<int>>(entity =>
-            {
-                entity.HasKey(e => new { e.LoginProvider, e.ProviderKey });
+                entity.ToTable("AspNetRoles");
             });
 
             modelBuilder.Entity<IdentityUserRole<int>>(entity =>
             {
                 entity.HasKey(e => new { e.UserId, e.RoleId });
+                entity.ToTable("AspNetUserRoles");
+            });
+
+            modelBuilder.Entity<IdentityUserClaim<int>>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("AspNetUserClaims");
+            });
+
+            modelBuilder.Entity<IdentityUserLogin<int>>(entity =>
+            {
+                entity.HasKey(e => new { e.LoginProvider, e.ProviderKey });
+                entity.ToTable("AspNetUserLogins");
+            });
+
+            modelBuilder.Entity<IdentityRoleClaim<int>>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("AspNetRoleClaims");
             });
 
             modelBuilder.Entity<IdentityUserToken<int>>(entity =>
             {
                 entity.HasKey(e => new { e.UserId, e.LoginProvider, e.Name });
+                entity.ToTable("AspNetUserTokens");
             });
+
+    
+
+            modelBuilder.Entity<IdentityUserRole<int>>()
+                .HasOne<IdentityRole<int>>()
+                .WithMany()
+                .HasForeignKey(ur => ur.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<IdentityUserRole<int>>()
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(ur => ur.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<IdentityUserClaim<int>>()
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(uc => uc.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<IdentityUserLogin<int>>()
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(ul => ul.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<IdentityRoleClaim<int>>()
+                .HasOne<IdentityRole<int>>()
+                .WithMany()
+                .HasForeignKey(rc => rc.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<IdentityUserToken<int>>()
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(ut => ut.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
 
 
             modelBuilder.Entity<Property>(entity =>
             {
-                // Связь с Seller (Продавец)
+                entity.ToTable("Properties");
+
                 entity.HasOne(p => p.Seller)
                     .WithMany()
                     .HasForeignKey(p => p.SellerId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
 
-                // Связь с Agent (Риелтор) - может быть null
                 entity.HasOne(p => p.Agent)
                     .WithMany()
                     .HasForeignKey(p => p.AgentId)
-                    .OnDelete(DeleteBehavior.SetNull);
+                    .OnDelete(DeleteBehavior.SetNull)
+                    .IsRequired(false);
 
-                // Индексы для поиска
                 entity.HasIndex(p => p.Status);
                 entity.HasIndex(p => p.Price);
-                entity.HasIndex(p => p.City);
             });
 
-      
 
             modelBuilder.Entity<Deal>(entity =>
             {
-                // Связь с Property
+                entity.ToTable("Deals");
+
                 entity.HasOne(d => d.Property)
                     .WithMany()
                     .HasForeignKey(d => d.PropertyId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
 
-                // Связь с Agent (Риелтор)
                 entity.HasOne(d => d.Agent)
                     .WithMany()
                     .HasForeignKey(d => d.AgentId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
 
-                // Связь с Client (Клиент)
                 entity.HasOne(d => d.Client)
                     .WithMany()
                     .HasForeignKey(d => d.ClientId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
 
-                // Связь с Seller (Продавец)
                 entity.HasOne(d => d.Seller)
                     .WithMany()
                     .HasForeignKey(d => d.SellerId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
 
-                // Связь с OfficeManager (может быть null)
                 entity.HasOne(d => d.OfficeManager)
                     .WithMany()
                     .HasForeignKey(d => d.OfficeManagerId)
-                    .OnDelete(DeleteBehavior.SetNull);
+                    .OnDelete(DeleteBehavior.SetNull)
+                    .IsRequired(false);
 
-                // Уникальный номер сделки
                 entity.HasIndex(d => d.DealNumber).IsUnique();
-
-                // Индекс по статусу
                 entity.HasIndex(d => d.Status);
             });
 
-    
+  
 
             modelBuilder.Entity<Transaction>(entity =>
             {
-                // Связь с Deal (может быть null)
+                entity.ToTable("Transactions");
+
                 entity.HasOne(t => t.Deal)
                     .WithMany()
                     .HasForeignKey(t => t.DealId)
-                    .OnDelete(DeleteBehavior.SetNull);
+                    .OnDelete(DeleteBehavior.SetNull)
+                    .IsRequired(false);
 
-                // Связь с CreatedBy (кто создал)
                 entity.HasOne(t => t.CreatedBy)
                     .WithMany()
                     .HasForeignKey(t => t.CreatedById)
-                    .OnDelete(DeleteBehavior.SetNull);
+                    .OnDelete(DeleteBehavior.SetNull)
+                    .IsRequired(false);
 
-                // Связь с ConfirmedBy (бухгалтер, кто подтвердил)
                 entity.HasOne(t => t.ConfirmedBy)
                     .WithMany()
                     .HasForeignKey(t => t.ConfirmedById)
-                    .OnDelete(DeleteBehavior.SetNull);
+                    .OnDelete(DeleteBehavior.SetNull)
+                    .IsRequired(false);
 
-                // Индекс по статусу
                 entity.HasIndex(t => t.Status);
-
-                // Индекс по дате
-                entity.HasIndex(t => t.CreatedAt);
             });
 
-    
+       
 
             modelBuilder.Entity<Showing>(entity =>
             {
-                // Связь с Property
+                entity.ToTable("Showings");
+
                 entity.HasOne(s => s.Property)
                     .WithMany()
                     .HasForeignKey(s => s.PropertyId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
 
-                // Связь с Agent
                 entity.HasOne(s => s.Agent)
                     .WithMany()
                     .HasForeignKey(s => s.AgentId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
 
-                // Связь с Client
                 entity.HasOne(s => s.Client)
                     .WithMany()
                     .HasForeignKey(s => s.ClientId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
             });
 
+       
 
             modelBuilder.Entity<Document>(entity =>
             {
-                // Связь с Deal (может быть null)
+                entity.ToTable("Documents");
+
                 entity.HasOne(d => d.Deal)
                     .WithMany()
                     .HasForeignKey(d => d.DealId)
-                    .OnDelete(DeleteBehavior.SetNull);
+                    .OnDelete(DeleteBehavior.SetNull)
+                    .IsRequired(false);
 
-                // Связь с Property (может быть null)
                 entity.HasOne(d => d.Property)
                     .WithMany()
                     .HasForeignKey(d => d.PropertyId)
-                    .OnDelete(DeleteBehavior.SetNull);
+                    .OnDelete(DeleteBehavior.SetNull)
+                    .IsRequired(false);
 
-                // Связь с User (кто загрузил)
                 entity.HasOne(d => d.UploadedBy)
                     .WithMany()
                     .HasForeignKey(d => d.UploadedById)
-                    .OnDelete(DeleteBehavior.SetNull);
+                    .OnDelete(DeleteBehavior.SetNull)
+                    .IsRequired(false);
             });
 
-        
+            
 
             modelBuilder.Entity<Invoice>(entity =>
             {
-                // Связь с Transaction (может быть null)
+                entity.ToTable("Invoices");
+
                 entity.HasOne(i => i.Transaction)
                     .WithMany()
                     .HasForeignKey(i => i.TransactionId)
-                    .OnDelete(DeleteBehavior.SetNull);
+                    .OnDelete(DeleteBehavior.SetNull)
+                    .IsRequired(false);
 
-                // Связь с Deal (может быть null)
                 entity.HasOne(i => i.Deal)
                     .WithMany()
                     .HasForeignKey(i => i.DealId)
-                    .OnDelete(DeleteBehavior.SetNull);
+                    .OnDelete(DeleteBehavior.SetNull)
+                    .IsRequired(false);
             });
 
-
+        
             modelBuilder.Entity<DealHistory>(entity =>
             {
-                // Связь с Deal
+                entity.ToTable("DealHistories");
+
                 entity.HasOne(h => h.Deal)
                     .WithMany()
                     .HasForeignKey(h => h.DealId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
 
-                // Связь с User (кто изменил)
                 entity.HasOne(h => h.ChangedBy)
                     .WithMany()
                     .HasForeignKey(h => h.ChangedById)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
             });
         }
     }
