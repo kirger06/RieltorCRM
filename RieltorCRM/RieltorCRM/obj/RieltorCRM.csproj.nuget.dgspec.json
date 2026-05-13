@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Вчеслав\\Desktop\\Proejects\\RieltorCRM\\RieltorCRM\\RieltorCRM.csproj": {}
+    "C:\\Users\\Вчеслав\\Source\\Repos\\RieltorCRM\\RieltorCRM\\RieltorCRM\\RieltorCRM.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Вчеслав\\Desktop\\Proejects\\RieltorCRM\\RieltorCRM\\RieltorCRM.csproj": {
+    "C:\\Users\\Вчеслав\\Source\\Repos\\RieltorCRM\\RieltorCRM\\RieltorCRM\\RieltorCRM.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Вчеслав\\Desktop\\Proejects\\RieltorCRM\\RieltorCRM\\RieltorCRM.csproj",
+        "projectUniqueName": "C:\\Users\\Вчеслав\\Source\\Repos\\RieltorCRM\\RieltorCRM\\RieltorCRM\\RieltorCRM.csproj",
         "projectName": "RieltorCRM",
-        "projectPath": "C:\\Users\\Вчеслав\\Desktop\\Proejects\\RieltorCRM\\RieltorCRM\\RieltorCRM.csproj",
+        "projectPath": "C:\\Users\\Вчеслав\\Source\\Repos\\RieltorCRM\\RieltorCRM\\RieltorCRM\\RieltorCRM.csproj",
         "packagesPath": "C:\\Users\\Вчеслав\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Вчеслав\\Desktop\\Proejects\\RieltorCRM\\RieltorCRM\\obj\\",
+        "outputPath": "C:\\Users\\Вчеслав\\Source\\Repos\\RieltorCRM\\RieltorCRM\\RieltorCRM\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -68,7 +68,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.313/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.314/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

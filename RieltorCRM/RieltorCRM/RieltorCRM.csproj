@@ -14,4 +14,8 @@
     <Folder Include="frontend\src\pages\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="RioterCRM.csproj" />
+  </ItemGroup>
+
 </Project>
