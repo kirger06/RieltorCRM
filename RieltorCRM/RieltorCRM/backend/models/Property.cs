@@ -69,7 +69,8 @@ namespace RieltorCRM.Models
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
 
-        [Column(TypeName = "jsonb")]
+        // Для SQL Server используем nvarchar(max) вместо jsonb
+        [Column(TypeName = "nvarchar(max)")]
         public string? Features { get; set; }
 
         [MaxLength(500)]
