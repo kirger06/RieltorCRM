@@ -36,3 +36,8 @@ C:\Users\Вчеслав\Source\Repos\RieltorCRM\RieltorCRM\RieltorCRM\bin\Debug\
 C:\Users\Вчеслав\Source\Repos\RieltorCRM\RieltorCRM\RieltorCRM\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.Relational.dll
 C:\Users\Вчеслав\Source\Repos\RieltorCRM\RieltorCRM\RieltorCRM\obj\Debug\net8.0\RieltorCRM.csproj.AssemblyReference.cache
 C:\Users\Вчеслав\Source\Repos\RieltorCRM\RieltorCRM\RieltorCRM\obj\Debug\net8.0\RieltorCRM.csproj.Up2Date
+C:\Users\Вчеслав\Source\Repos\RieltorCRM\RieltorCRM\RieltorCRM\bin\Debug\net8.0\Microsoft.IdentityModel.Abstractions.dll
+C:\Users\Вчеслав\Source\Repos\RieltorCRM\RieltorCRM\RieltorCRM\bin\Debug\net8.0\Microsoft.IdentityModel.JsonWebTokens.dll
+C:\Users\Вчеслав\Source\Repos\RieltorCRM\RieltorCRM\RieltorCRM\bin\Debug\net8.0\Microsoft.IdentityModel.Logging.dll
+C:\Users\Вчеслав\Source\Repos\RieltorCRM\RieltorCRM\RieltorCRM\bin\Debug\net8.0\Microsoft.IdentityModel.Tokens.dll
+C:\Users\Вчеслав\Source\Repos\RieltorCRM\RieltorCRM\RieltorCRM\bin\Debug\net8.0\System.IdentityModel.Tokens.Jwt.dll
