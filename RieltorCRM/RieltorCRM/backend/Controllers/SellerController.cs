@@ -47,7 +47,7 @@ namespace RieltorCRM.backend.Controllers
                         p.UpdatedAt,
                         AgentName = p.Agent != null ? $"{p.Agent.FirstName} {p.Agent.LastName}" : "Не назначен",
                         AgentPhone = p.Agent != null ? p.Agent.PhoneNumber : null,
-                        DealsCount = p.Deals != null ? p.Deals.Count : 0
+                        DealsCount = _context.Deals.Count(d => d.PropertyId == p.Id)
                     })
                     .ToListAsync();
 

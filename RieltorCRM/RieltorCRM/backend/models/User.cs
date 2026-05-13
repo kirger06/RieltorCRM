@@ -30,16 +30,9 @@ namespace RieltorCRM.Models
 
         public UserRole Role { get; set; }
 
-        [MaxLength(20)]
-        public string? PhoneNumber2 { get; set; }
-
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public bool IsActive { get; set; } = true;
 
-        public virtual ICollection<Deal>? DealsAsAgent { get; set; }
-        public virtual ICollection<Deal>? DealsAsClient { get; set; }
-        public virtual ICollection<Deal>? DealsAsSeller { get; set; }
-        public virtual ICollection<Property>? Properties { get; set; }
-        public virtual ICollection<Transaction>? Transactions { get; set; }
+
     }
 }

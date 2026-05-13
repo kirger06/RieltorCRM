@@ -61,6 +61,7 @@ namespace RieltorCRM.Models
         public DateTime? UpdatedAt { get; set; }
         public DateTime? CompletedAt { get; set; }
 
+        // Внешние ключи - ТОЛЬКО int
         [Required]
         public int PropertyId { get; set; }
 
@@ -75,23 +76,20 @@ namespace RieltorCRM.Models
 
         public int? OfficeManagerId { get; set; }
 
+        // Навигационные свойства - с атрибутами ForeignKey
         [ForeignKey("PropertyId")]
-        public virtual Property? Property { get; set; }
+        public Property? Property { get; set; }
 
         [ForeignKey("AgentId")]
-        public virtual User? Agent { get; set; }
+        public User? Agent { get; set; }
 
         [ForeignKey("ClientId")]
-        public virtual User? Client { get; set; }
+        public User? Client { get; set; }
 
         [ForeignKey("SellerId")]
-        public virtual User? Seller { get; set; }
+        public User? Seller { get; set; }
 
         [ForeignKey("OfficeManagerId")]
-        public virtual User? OfficeManager { get; set; }
-
-        public virtual ICollection<Transaction>? Transactions { get; set; }
-        public virtual ICollection<Document>? Documents { get; set; }
-        public virtual ICollection<DealHistory>? History { get; set; }
+        public User? OfficeManager { get; set; }
     }
 }

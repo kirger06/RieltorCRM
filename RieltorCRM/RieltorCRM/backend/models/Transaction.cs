@@ -56,14 +56,12 @@ namespace RieltorCRM.Models
         public int? ConfirmedById { get; set; }
 
         [ForeignKey("DealId")]
-        public virtual Deal? Deal { get; set; }
+        public Deal? Deal { get; set; }
 
         [ForeignKey("CreatedById")]
-        public virtual User? CreatedBy { get; set; }
+        public User? CreatedBy { get; set; }
 
         [ForeignKey("ConfirmedById")]
-        public virtual User? ConfirmedBy { get; set; }
-
-        public virtual ICollection<Invoice>? Invoices { get; set; }
+        public User? ConfirmedBy { get; set; }
     }
 }

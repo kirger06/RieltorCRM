@@ -69,7 +69,6 @@ namespace RieltorCRM.Models
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
 
-        // Для SQL Server используем nvarchar(max) вместо jsonb
         [Column(TypeName = "nvarchar(max)")]
         public string? Features { get; set; }
 
@@ -84,12 +83,9 @@ namespace RieltorCRM.Models
         public bool IsActive { get; set; } = true;
 
         [ForeignKey("SellerId")]
-        public virtual User? Seller { get; set; }
+        public User? Seller { get; set; }
 
         [ForeignKey("AgentId")]
-        public virtual User? Agent { get; set; }
-
-        public virtual ICollection<Deal>? Deals { get; set; }
-        public virtual ICollection<Showing>? Showings { get; set; }
+        public User? Agent { get; set; }
     }
 }

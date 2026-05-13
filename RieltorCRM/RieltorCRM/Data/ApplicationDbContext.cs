@@ -34,8 +34,7 @@ namespace RieltorCRM.Data
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Id).ValueGeneratedOnAdd();
 
-                // Убираем автоматические связи, будем настраивать вручную
-                entity.Ignore(e => e.PhoneNumber2);
+               
             });
 
             modelBuilder.Entity<IdentityRole<int>>(entity =>
