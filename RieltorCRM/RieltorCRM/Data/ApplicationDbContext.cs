@@ -2,8 +2,6 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using RieltorCRM.Models;
-using System.Collections.Generic;
-using System.Reflection.Emit;
 
 namespace RieltorCRM.Data
 {
@@ -26,6 +24,20 @@ namespace RieltorCRM.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            // Настройка Id для Identity таблиц
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.Property(e => e.Id)
+                    .ValueGeneratedOnAdd();
+            });
+
+            modelBuilder.Entity<IdentityRole<int>>(entity =>
+            {
+                entity.Property(e => e.Id)
+                    .ValueGeneratedOnAdd();
+            });
+
+            // Связи для Deal
             modelBuilder.Entity<Deal>()
                 .HasOne(d => d.Agent)
                 .WithMany(u => u.DealsAsAgent)
@@ -44,10 +56,12 @@ namespace RieltorCRM.Data
                 .HasForeignKey(d => d.SellerId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Уникальный номер сделки
             modelBuilder.Entity<Deal>()
                 .HasIndex(d => d.DealNumber)
                 .IsUnique();
 
+            // Индексы
             modelBuilder.Entity<Property>()
                 .HasIndex(p => p.Status);
 
@@ -57,6 +71,41 @@ namespace RieltorCRM.Data
             modelBuilder.Entity<Transaction>()
                 .HasIndex(t => t.Status);
 
+            // Настройка decimal для SQL Server
+            modelBuilder.Entity<Property>()
+                .Property(p => p.Price)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<Property>()
+                .Property(p => p.Area)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<Deal>()
+                .Property(d => d.Amount)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<Deal>()
+                .Property(d => d.Commission)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<Deal>()
+                .Property(d => d.CommissionPercent)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<Transaction>()
+                .Property(t => t.Amount)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<Invoice>()
+                .Property(i => i.Amount)
+                .HasColumnType("decimal(18,2)");
+
+            // Features - JSON храним как nvarchar(max) в SQL Server
+            modelBuilder.Entity<Property>()
+                .Property(p => p.Features)
+                .HasColumnType("nvarchar(max)");
+
+            // Настройка связей для Showing
             modelBuilder.Entity<Showing>()
                 .HasOne(s => s.Property)
                 .WithMany(p => p.Showings)
@@ -75,6 +124,7 @@ namespace RieltorCRM.Data
                 .HasForeignKey(s => s.ClientId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Настройка связей для DealHistory
             modelBuilder.Entity<DealHistory>()
                 .HasOne(h => h.Deal)
                 .WithMany(d => d.History)
