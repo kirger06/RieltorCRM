@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RieltorCRM")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0183afa5e5be3c4571a24e08f97a790149e9b796")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+34b4a26bb55dddf244f3dacc5fe6d5cd451624f6")]
 [assembly: System.Reflection.AssemblyProductAttribute("RieltorCRM")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RieltorCRM")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
