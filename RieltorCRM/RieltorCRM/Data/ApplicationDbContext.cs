@@ -177,19 +177,19 @@ namespace RieltorCRM.Data
                 entity.HasOne(t => t.Deal)
                     .WithMany()
                     .HasForeignKey(t => t.DealId)
-                    .OnDelete(DeleteBehavior.SetNull)
+                    .OnDelete(DeleteBehavior.Restrict)
                     .IsRequired(false);
 
                 entity.HasOne(t => t.CreatedBy)
                     .WithMany()
                     .HasForeignKey(t => t.CreatedById)
-                    .OnDelete(DeleteBehavior.SetNull)
+                    .OnDelete(DeleteBehavior.Restrict)
                     .IsRequired(false);
 
                 entity.HasOne(t => t.ConfirmedBy)
                     .WithMany()
                     .HasForeignKey(t => t.ConfirmedById)
-                    .OnDelete(DeleteBehavior.SetNull)
+                    .OnDelete(DeleteBehavior.Restrict)
                     .IsRequired(false);
 
                 entity.HasIndex(t => t.Status);
