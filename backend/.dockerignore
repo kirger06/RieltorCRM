@@ -1,0 +1,8 @@
+bin/
+obj/
+rieltor.db
+frontend/
+wwwroot/assets/
+wwwroot/index.html
+*.user
+.vs/
