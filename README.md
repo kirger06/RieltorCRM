@@ -157,7 +157,6 @@ Frontend запускается на **http://localhost:5173**.
 | ОфисМенеджер | `/api/manager` | OfficeManager |
 | Бухгалтер | `/api/accountant` | Accountant |
 
-Полный список эндпоинтов — в [РАЗБОР_ПРОЕКТА.md](РАЗБОР_ПРОЕКТА.md) или через Swagger UI.
 
 ---
 
