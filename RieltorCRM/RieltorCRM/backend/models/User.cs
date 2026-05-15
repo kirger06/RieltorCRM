@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Transactions;
 
 namespace RieltorCRM.Models
 {
@@ -33,6 +32,9 @@ namespace RieltorCRM.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public bool IsActive { get; set; } = true;
 
+        public int? CompanyId { get; set; }
 
+        [ForeignKey("CompanyId")]
+        public Company? Company { get; set; }
     }
 }

@@ -58,7 +58,7 @@ namespace RieltorCRM.backend.Controllers
                         user.Email,
                         user.FirstName,
                         user.LastName,
-                        user.Role
+                        Role = user.Role.ToString()
                     }
                 });
             }
@@ -69,6 +69,7 @@ namespace RieltorCRM.backend.Controllers
             }
         }
 
+        // Public registration — always creates a Client account
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto model)
         {
@@ -86,16 +87,17 @@ namespace RieltorCRM.backend.Controllers
                     LastName = model.LastName,
                     MiddleName = model.MiddleName,
                     PhoneNumber = model.PhoneNumber,
-                    Role = model.Role,
+                    Role = UserRole.Client,
                     CreatedAt = DateTime.UtcNow,
-                    IsActive = true
+                    IsActive = true,
+                    EmailConfirmed = true
                 };
 
                 var result = await _userManager.CreateAsync(user, model.Password);
                 if (!result.Succeeded)
                     return BadRequest(new { errors = result.Errors });
 
-                await _userManager.AddToRoleAsync(user, model.Role.ToString());
+                await _userManager.AddToRoleAsync(user, "Client");
 
                 var token = await GenerateJwtToken(user);
 
@@ -108,7 +110,7 @@ namespace RieltorCRM.backend.Controllers
                         user.Email,
                         user.FirstName,
                         user.LastName,
-                        user.Role
+                        Role = user.Role.ToString()
                     }
                 });
             }
@@ -123,7 +125,8 @@ namespace RieltorCRM.backend.Controllers
         [HttpGet("profile")]
         public async Task<IActionResult> GetProfile()
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (!int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId))
+                return Unauthorized(new { message = "Неверный токен" });
             var user = await _userManager.FindByIdAsync(userId.ToString());
 
             if (user == null)
@@ -137,7 +140,7 @@ namespace RieltorCRM.backend.Controllers
                 user.LastName,
                 user.MiddleName,
                 user.PhoneNumber,
-                user.Role,
+                Role = user.Role.ToString(),
                 user.CreatedAt
             });
         }

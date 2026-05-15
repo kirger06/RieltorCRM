@@ -1,0 +1,33 @@
+# .NET build artifacts
+**/bin/
+**/obj/
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Frontend dependencies and build output
+**/node_modules/
+**/dist/
+**/.vite/
+**/wwwroot/assets/
+**/wwwroot/index.html
+
+# Uploaded user files (runtime data)
+**/wwwroot/uploads/properties/*/
+
+# .NET user-specific settings
+*.user
+*.suo
+.vs/
+
+# Environment / secrets
+appsettings.Production.json
+*.pfx
+
+# macOS
+.DS_Store
+
+# Logs
+*.log

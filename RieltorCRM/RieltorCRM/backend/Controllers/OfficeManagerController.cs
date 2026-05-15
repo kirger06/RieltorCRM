@@ -1,205 +1,280 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RieltorCRM.Data;
-using RieltorCRM.DTOs;
 using RieltorCRM.Models;
+using System.Security.Claims;
 
-namespace RieltorCRM.backend.Controllers
+namespace RieltorCRM.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    [Authorize(Roles = "OfficeManager,Admin")]
+    [Route("api/manager")]
+    [Authorize(Roles = "OfficeManager")]
     public class OfficeManagerController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-        private readonly ILogger<OfficeManagerController> _logger;
+        private readonly UserManager<User> _userManager;
 
-        public OfficeManagerController(ApplicationDbContext context, ILogger<OfficeManagerController> logger)
+        public OfficeManagerController(ApplicationDbContext context, UserManager<User> userManager)
         {
             _context = context;
-            _logger = logger;
+            _userManager = userManager;
         }
 
-        [HttpGet("properties")]
-        public async Task<IActionResult> GetAllProperties(
-            [FromQuery] PropertyStatus? status = null,
-            [FromQuery] PropertyType? type = null,
-            [FromQuery] decimal? minPrice = null,
-            [FromQuery] decimal? maxPrice = null,
-            [FromQuery] string? city = null,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 20)
+        [HttpGet("company")]
+        public async Task<IActionResult> GetMyCompany()
         {
-            try
+            var managerId = GetCurrentUserId();
+            if (managerId == 0) return Unauthorized();
+
+            var manager = await _context.Users
+                .Include(u => u.Company)
+                .FirstOrDefaultAsync(u => u.Id == managerId);
+
+            if (manager?.Company == null)
+                return NotFound("Менеджер не привязан к компании");
+
+            return Ok(new
             {
-                var query = _context.Properties
-                    .Include(p => p.Seller)
-                    .Include(p => p.Agent)
-                    .Where(p => p.IsActive);
-
-                if (status.HasValue)
-                    query = query.Where(p => p.Status == status.Value);
-
-                if (type.HasValue)
-                    query = query.Where(p => p.Type == type.Value);
-
-                if (minPrice.HasValue)
-                    query = query.Where(p => p.Price >= minPrice.Value);
-
-                if (maxPrice.HasValue)
-                    query = query.Where(p => p.Price <= maxPrice.Value);
-
-                if (!string.IsNullOrWhiteSpace(city))
-                    query = query.Where(p => p.City == city);
-
-                var total = await query.CountAsync();
-                var properties = await query
-                    .OrderByDescending(p => p.CreatedAt)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .Select(p => new
-                    {
-                        p.Id,
-                        p.Title,
-                        p.Type,
-                        p.Status,
-                        p.Price,
-                        p.Area,
-                        p.Rooms,
-                        p.City,
-                        p.Address,
-                        p.CreatedAt,
-                        SellerName = $"{p.Seller!.FirstName} {p.Seller.LastName}",
-                        AgentName = p.Agent != null ? $"{p.Agent.FirstName} {p.Agent.LastName}" : "Не назначен"
-                    })
-                    .ToListAsync();
-
-                return Ok(new { properties, total, page, pageSize });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при получении объектов");
-                return StatusCode(500, new { message = "Ошибка сервера" });
-            }
+                manager.Company.Id,
+                manager.Company.Name,
+                manager.Company.Description,
+                manager.Company.Phone,
+                manager.Company.Address,
+                manager.Company.CreatedAt
+            });
         }
 
-        [HttpPut("properties/{propertyId}/assign-agent")]
-        public async Task<IActionResult> AssignAgent(int propertyId, [FromBody] AssignAgentDto model)
+        [HttpGet("stats")]
+        public async Task<IActionResult> GetStats()
         {
-            try
-            {
-                var property = await _context.Properties.FindAsync(propertyId);
-                if (property == null)
-                    return NotFound(new { message = "Объект не найден" });
+            var companyId = await GetCurrentCompanyId();
+            if (companyId == null) return Unauthorized("Менеджер не привязан к компании");
 
-                var agent = await _context.Users
-                    .FirstOrDefaultAsync(u => u.Id == model.AgentId && u.Role == UserRole.Agent);
+            var agentIds = await _context.Users
+                .Where(u => u.CompanyId == companyId && u.Role == UserRole.Agent)
+                .Select(u => u.Id)
+                .ToListAsync();
 
-                if (agent == null)
-                    return BadRequest(new { message = "Агент не найден" });
+            var propertyStats = await _context.Properties
+                .Where(p => p.AgentId.HasValue && agentIds.Contains(p.AgentId.Value))
+                .GroupBy(p => p.Status)
+                .Select(g => new { Status = g.Key.ToString(), Count = g.Count() })
+                .ToListAsync();
 
-                property.AgentId = model.AgentId;
-                property.UpdatedAt = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
+            var bookingStats = await _context.Bookings
+                .Include(b => b.Property)
+                .Where(b => b.Property!.AgentId.HasValue && agentIds.Contains(b.Property.AgentId.Value))
+                .GroupBy(b => b.Type)
+                .Select(g => new { Type = g.Key.ToString(), Count = g.Count() })
+                .ToListAsync();
 
-                return Ok(new { message = "Агент назначен" });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при назначении агента");
-                return StatusCode(500, new { message = "Ошибка сервера" });
-            }
+            var revenuePrices = await _context.Bookings
+                .Include(b => b.Property)
+                .Where(b =>
+                    b.Type == BookingType.Purchase &&
+                    b.Status == BookingStatus.Active &&
+                    b.Property!.AgentId.HasValue &&
+                    agentIds.Contains(b.Property.AgentId.Value))
+                .Select(b => b.Property!.Price)
+                .ToListAsync();
+            var totalRevenue = revenuePrices.Sum();
+
+            return Ok(new { propertyStats, bookingStats, totalRevenue });
         }
 
-        [HttpPut("properties/{propertyId}/status")]
-        public async Task<IActionResult> UpdatePropertyStatus(int propertyId, [FromBody] PropertyStatus status)
+        [HttpGet("clients")]
+        public async Task<IActionResult> GetClients([FromQuery] string? search)
         {
-            try
-            {
-                var property = await _context.Properties.FindAsync(propertyId);
-                if (property == null)
-                    return NotFound(new { message = "Объект не найден" });
+            var companyId = await GetCurrentCompanyId();
+            if (companyId == null) return Unauthorized("Менеджер не привязан к компании");
 
-                property.Status = status;
-                property.UpdatedAt = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
+            var agentIds = await _context.Users
+                .Where(u => u.CompanyId == companyId && u.Role == UserRole.Agent)
+                .Select(u => u.Id)
+                .ToListAsync();
 
-                return Ok(new { message = "Статус объекта обновлен" });
-            }
-            catch (Exception ex)
+            var query = _context.Bookings
+                .Include(b => b.Client)
+                .Include(b => b.Property)
+                .Where(b => b.Property!.AgentId.HasValue && agentIds.Contains(b.Property.AgentId.Value));
+
+            var rawBookings = await query
+                .OrderByDescending(b => b.CreatedAt)
+                .ToListAsync();
+
+            var bookings = rawBookings.Select(b => new
             {
-                _logger.LogError(ex, "Ошибка при обновлении статуса");
-                return StatusCode(500, new { message = "Ошибка сервера" });
+                ClientId = b.Client!.Id,
+                ClientName = $"{b.Client.FirstName} {b.Client.LastName}",
+                b.Client.Email,
+                b.Client.PhoneNumber,
+                BookingId = b.Id,
+                Type = b.Type.ToString(),
+                Status = b.Status.ToString(),
+                b.CreatedAt,
+                PropertyTitle = b.Property!.Title,
+                PropertyId = b.Property.Id,
+                PropertyPrice = b.Property.Price,
+                PropertyAddress = b.Property.Address
+            }).ToList();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.ToLower();
+                bookings = bookings.Where(b =>
+                    (b.ClientName ?? "").ToLower().Contains(s) ||
+                    (b.Email ?? "").ToLower().Contains(s) ||
+                    (b.PropertyTitle ?? "").ToLower().Contains(s))
+                    .ToList();
             }
+
+            return Ok(bookings);
         }
 
-        [HttpGet("deals")]
-        public async Task<IActionResult> GetAllDeals(
-            [FromQuery] DealStatus? status = null,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 20)
+        [HttpGet("bookings")]
+        public async Task<IActionResult> GetBookings([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            try
+            var companyId = await GetCurrentCompanyId();
+            if (companyId == null) return Unauthorized("Менеджер не привязан к компании");
+
+            var agentIds = await _context.Users
+                .Where(u => u.CompanyId == companyId && u.Role == UserRole.Agent)
+                .Select(u => u.Id)
+                .ToListAsync();
+
+            var query = _context.Bookings
+                .Include(b => b.Client)
+                .Include(b => b.Property)
+                .Where(b => b.Property!.AgentId.HasValue && agentIds.Contains(b.Property.AgentId.Value));
+
+            var total = await query.CountAsync();
+            var rawBk = await query
+                .OrderByDescending(b => b.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var bookings = rawBk.Select(b => new
             {
-                var query = _context.Deals
-                    .Include(d => d.Property)
-                    .Include(d => d.Agent)
-                    .Include(d => d.Client)
-                    .Include(d => d.Seller)
-                    .AsQueryable();
+                b.Id,
+                Type = b.Type.ToString(),
+                Status = b.Status.ToString(),
+                b.CreatedAt,
+                ClientName = $"{b.Client!.FirstName} {b.Client.LastName}",
+                ClientEmail = b.Client.Email,
+                ClientPhone = b.Client.PhoneNumber,
+                PropertyTitle = b.Property!.Title,
+                PropertyPrice = b.Property.Price,
+                PropertyAddress = b.Property.Address
+            });
 
-                if (status.HasValue)
-                    query = query.Where(d => d.Status == status.Value);
-
-                var total = await query.CountAsync();
-                var deals = await query
-                    .OrderByDescending(d => d.CreatedAt)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .Select(d => new
-                    {
-                        d.Id,
-                        d.DealNumber,
-                        d.Type,
-                        d.Status,
-                        d.Amount,
-                        d.Commission,
-                        d.CreatedAt,
-                        d.CompletedAt,
-                        PropertyTitle = d.Property!.Title,
-                        AgentName = $"{d.Agent!.FirstName} {d.Agent.LastName}",
-                        ClientName = $"{d.Client!.FirstName} {d.Client.LastName}",
-                        SellerName = $"{d.Seller!.FirstName} {d.Seller.LastName}"
-                    })
-                    .ToListAsync();
-
-                return Ok(new { deals, total, page, pageSize });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при получении сделок");
-                return StatusCode(500, new { message = "Ошибка сервера" });
-            }
+            return Ok(new { total, page, pageSize, bookings });
         }
 
-        [HttpGet("agents")]
-        public async Task<IActionResult> GetAgents()
-        {
-            try
-            {
-                var agents = await _context.Users
-                    .Where(u => u.Role == UserRole.Agent && u.IsActive)
-                    .Select(u => new { u.Id, u.Email, u.FirstName, u.LastName, u.PhoneNumber })
-                    .ToListAsync();
+        // ── User / role management ────────────────────────────────────
 
-                return Ok(agents);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при получении агентов");
-                return StatusCode(500, new { message = "Ошибка сервера" });
-            }
+        [HttpGet("users")]
+        public async Task<IActionResult> GetCompanyUsers()
+        {
+            var companyId = await GetCurrentCompanyId();
+            if (companyId == null) return Unauthorized("Менеджер не привязан к компании");
+
+            var users = await _context.Users
+                .Where(u => u.CompanyId == companyId && u.Role != UserRole.OfficeManager)
+                .Select(u => new
+                {
+                    u.Id,
+                    u.FirstName,
+                    u.LastName,
+                    u.Email,
+                    u.PhoneNumber,
+                    Role = u.Role.ToString(),
+                    u.IsActive,
+                    u.CreatedAt
+                })
+                .ToListAsync();
+
+            return Ok(users);
+        }
+
+        [HttpPost("users/{userId}/assign-agent")]
+        public async Task<IActionResult> AssignAgent(int userId)
+        {
+            var companyId = await GetCurrentCompanyId();
+            if (companyId == null) return Unauthorized("Менеджер не привязан к компании");
+
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user == null) return NotFound("Пользователь не найден");
+
+            var currentRoles = await _userManager.GetRolesAsync(user);
+            await _userManager.RemoveFromRolesAsync(user, currentRoles);
+            await _userManager.AddToRoleAsync(user, "Agent");
+
+            user.Role = UserRole.Agent;
+            user.CompanyId = companyId;
+            await _userManager.UpdateAsync(user);
+
+            return Ok(new { user.Id, Role = user.Role.ToString(), CompanyId = companyId });
+        }
+
+        [HttpPost("users/{userId}/assign-accountant")]
+        public async Task<IActionResult> AssignAccountant(int userId)
+        {
+            var companyId = await GetCurrentCompanyId();
+            if (companyId == null) return Unauthorized("Менеджер не привязан к компании");
+
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user == null) return NotFound("Пользователь не найден");
+
+            var currentRoles = await _userManager.GetRolesAsync(user);
+            await _userManager.RemoveFromRolesAsync(user, currentRoles);
+            await _userManager.AddToRoleAsync(user, "Accountant");
+
+            user.Role = UserRole.Accountant;
+            user.CompanyId = companyId;
+            await _userManager.UpdateAsync(user);
+
+            return Ok(new { user.Id, Role = user.Role.ToString(), CompanyId = companyId });
+        }
+
+        [HttpDelete("users/{userId}/remove")]
+        public async Task<IActionResult> RemoveFromCompany(int userId)
+        {
+            var companyId = await GetCurrentCompanyId();
+            if (companyId == null) return Unauthorized("Менеджер не привязан к компании");
+
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user == null) return NotFound("Пользователь не найден");
+
+            if (user.CompanyId != companyId)
+                return Forbid();
+
+            var currentRoles = await _userManager.GetRolesAsync(user);
+            await _userManager.RemoveFromRolesAsync(user, currentRoles);
+            await _userManager.AddToRoleAsync(user, "Client");
+
+            user.Role = UserRole.Client;
+            user.CompanyId = null;
+            await _userManager.UpdateAsync(user);
+
+            return Ok(new { user.Id, Role = user.Role.ToString(), message = "Пользователь переведён в роль Client" });
+        }
+
+        private int GetCurrentUserId()
+        {
+            int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId);
+            return userId;
+        }
+
+        private async Task<int?> GetCurrentCompanyId()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == 0) return null;
+
+            var user = await _context.Users.FindAsync(userId);
+            return user?.CompanyId;
         }
     }
 }

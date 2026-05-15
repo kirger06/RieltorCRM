@@ -1,5 +1,4 @@
-﻿using RieltorCRM.Models;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace RieltorCRM.Models
@@ -26,7 +25,6 @@ namespace RieltorCRM.Models
         public InvoiceStatus Status { get; set; } = InvoiceStatus.Draft;
 
         [Required]
-        [Column(TypeName = "decimal(18,2)")]
         public decimal Amount { get; set; }
 
         [MaxLength(500)]

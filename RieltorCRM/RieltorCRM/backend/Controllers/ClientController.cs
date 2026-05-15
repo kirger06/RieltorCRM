@@ -1,210 +1,144 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RieltorCRM.Data;
 using RieltorCRM.Models;
+using System.Security.Claims;
 
-namespace RieltorCRM.backend.Controllers
+namespace RieltorCRM.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/client")]
     [Authorize(Roles = "Client")]
     public class ClientController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-        private readonly ILogger<ClientController> _logger;
 
-        public ClientController(ApplicationDbContext context, ILogger<ClientController> logger)
+        public ClientController(ApplicationDbContext context)
         {
             _context = context;
-            _logger = logger;
         }
 
-        [HttpGet("properties")]
-        public async Task<IActionResult> SearchProperties(
-            [FromQuery] string? search = null,
-            [FromQuery] PropertyType? type = null,
-            [FromQuery] decimal? minPrice = null,
-            [FromQuery] decimal? maxPrice = null,
-            [FromQuery] string? city = null,
-            [FromQuery] int? rooms = null,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 12)
+        [HttpGet("bookings")]
+        public async Task<IActionResult> GetMyBookings()
         {
-            try
-            {
-                var query = _context.Properties
-                    .Include(p => p.Agent)
-                    .Where(p => p.Status == PropertyStatus.Available && p.IsActive);
+            var clientId = GetCurrentUserId();
+            if (clientId == 0) return Unauthorized();
 
-                if (!string.IsNullOrWhiteSpace(search))
+            var raw = await _context.Bookings
+                .Include(b => b.Property)
+                    .ThenInclude(p => p!.Agent)
+                .Where(b => b.ClientId == clientId)
+                .OrderByDescending(b => b.CreatedAt)
+                .ToListAsync();
+
+            var bookings = raw.Select(b => new
+            {
+                b.Id,
+                Type = b.Type.ToString(),
+                Status = b.Status.ToString(),
+                b.CreatedAt,
+                Property = b.Property == null ? null : (object)new
                 {
-                    search = search.ToLower();
-                    query = query.Where(p =>
-                        p.Title.ToLower().Contains(search) ||
-                        p.Description!.ToLower().Contains(search));
+                    b.Property.Id,
+                    b.Property.Title,
+                    b.Property.Address,
+                    b.Property.City,
+                    b.Property.Price,
+                    b.Property.Area,
+                    b.Property.Rooms,
+                    b.Property.ImageUrls,
+                    Status = b.Property.Status.ToString(),
+                    AgentName = b.Property.Agent != null
+                        ? $"{b.Property.Agent.FirstName} {b.Property.Agent.LastName}"
+                        : null,
+                    AgentPhone = b.Property.Agent != null ? b.Property.Agent.PhoneNumber : null
                 }
+            });
 
-                if (type.HasValue)
-                    query = query.Where(p => p.Type == type.Value);
-
-                if (minPrice.HasValue)
-                    query = query.Where(p => p.Price >= minPrice.Value);
-
-                if (maxPrice.HasValue)
-                    query = query.Where(p => p.Price <= maxPrice.Value);
-
-                if (!string.IsNullOrWhiteSpace(city))
-                    query = query.Where(p => p.City!.ToLower() == city.ToLower());
-
-                if (rooms.HasValue)
-                    query = query.Where(p => p.Rooms == rooms.Value);
-
-                var total = await query.CountAsync();
-                var properties = await query
-                    .OrderByDescending(p => p.CreatedAt)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .Select(p => new
-                    {
-                        p.Id,
-                        p.Title,
-                        p.Type,
-                        p.Price,
-                        p.Area,
-                        p.Rooms,
-                        p.Floor,
-                        p.TotalFloors,
-                        p.Address,
-                        p.City,
-                        p.District,
-                        p.Description,
-                        p.ImageUrls,
-                        AgentName = p.Agent != null ? $"{p.Agent.FirstName} {p.Agent.LastName}" : null,
-                        AgentPhone = p.Agent != null ? p.Agent.PhoneNumber : null
-                    })
-                    .ToListAsync();
-
-                return Ok(new { properties, total, page, pageSize });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при поиске объектов");
-                return StatusCode(500, new { message = "Ошибка сервера" });
-            }
+            return Ok(bookings);
         }
 
-        [HttpGet("properties/{id}")]
-        public async Task<IActionResult> GetPropertyDetail(int id)
+        [HttpPost("bookings")]
+        public async Task<IActionResult> CreateBooking([FromBody] CreateBookingDto dto)
         {
-            try
-            {
-                var property = await _context.Properties
-                    .Include(p => p.Agent)
-                    .FirstOrDefaultAsync(p => p.Id == id && p.IsActive);
+            var clientId = GetCurrentUserId();
+            if (clientId == 0) return Unauthorized();
 
-                if (property == null)
-                    return NotFound(new { message = "Объект не найден" });
+            var property = await _context.Properties
+                .FirstOrDefaultAsync(p => p.Id == dto.PropertyId && p.IsActive);
 
-                return Ok(new
-                {
-                    property.Id,
-                    property.Title,
-                    property.Type,
-                    property.Price,
-                    property.Area,
-                    property.Rooms,
-                    property.Floor,
-                    property.TotalFloors,
-                    property.Address,
-                    property.City,
-                    property.District,
-                    property.Description,
-                    property.Features,
-                    property.ImageUrls,
-                    AgentName = property.Agent != null ? $"{property.Agent.FirstName} {property.Agent.LastName}" : null,
-                    AgentPhone = property.Agent?.PhoneNumber,
-                    AgentEmail = property.Agent?.Email
-                });
-            }
-            catch (Exception ex)
+            if (property == null)
+                return NotFound("Объект не найден");
+
+            if (property.Status != PropertyStatus.Available)
+                return BadRequest($"Объект недоступен для бронирования (статус: {property.Status})");
+
+            var existingBooking = await _context.Bookings
+                .AnyAsync(b => b.PropertyId == dto.PropertyId && b.Status == BookingStatus.Active);
+
+            if (existingBooking)
+                return BadRequest("Объект уже забронирован");
+
+            var booking = new Booking
             {
-                _logger.LogError(ex, "Ошибка при получении объекта");
-                return StatusCode(500, new { message = "Ошибка сервера" });
-            }
+                PropertyId = dto.PropertyId,
+                ClientId = clientId,
+                Type = dto.Type,
+                Status = BookingStatus.Active,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            property.Status = dto.Type == BookingType.Purchase
+                ? PropertyStatus.Sold
+                : PropertyStatus.Reserved;
+            property.UpdatedAt = DateTime.UtcNow;
+
+            _context.Bookings.Add(booking);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetMyBookings), new { },
+                new { booking.Id, booking.Type, booking.Status, PropertyStatus = property.Status });
         }
 
-        [HttpGet("my-deals")]
-        public async Task<IActionResult> GetMyDeals()
+        [HttpDelete("bookings/{id}")]
+        public async Task<IActionResult> CancelBooking(int id)
         {
-            try
-            {
-                var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var clientId = GetCurrentUserId();
+            if (clientId == 0) return Unauthorized();
 
-                var deals = await _context.Deals
-                    .Include(d => d.Property)
-                    .Include(d => d.Agent)
-                    .Where(d => d.ClientId == userId)
-                    .OrderByDescending(d => d.CreatedAt)
-                    .Select(d => new
-                    {
-                        d.Id,
-                        d.DealNumber,
-                        d.Type,
-                        d.Status,
-                        d.Amount,
-                        d.Commission,
-                        d.CreatedAt,
-                        d.CompletedAt,
-                        PropertyTitle = d.Property!.Title,
-                        PropertyAddress = d.Property.Address,
-                        AgentName = $"{d.Agent!.FirstName} {d.Agent.LastName}",
-                        AgentPhone = d.Agent.PhoneNumber,
-                        AgentEmail = d.Agent.Email
-                    })
-                    .ToListAsync();
+            var booking = await _context.Bookings
+                .Include(b => b.Property)
+                .FirstOrDefaultAsync(b => b.Id == id && b.ClientId == clientId);
 
-                return Ok(deals);
-            }
-            catch (Exception ex)
+            if (booking == null)
+                return NotFound();
+
+            if (booking.Status != BookingStatus.Active)
+                return BadRequest("Бронирование уже не активно");
+
+            booking.Status = BookingStatus.Cancelled;
+
+            if (booking.Property != null)
             {
-                _logger.LogError(ex, "Ошибка при получении сделок клиента");
-                return StatusCode(500, new { message = "Ошибка сервера" });
+                booking.Property.Status = PropertyStatus.Available;
+                booking.Property.UpdatedAt = DateTime.UtcNow;
             }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Бронирование отменено" });
         }
 
-        [HttpGet("my-showings")]
-        public async Task<IActionResult> GetMyShowings()
+        private int GetCurrentUserId()
         {
-            try
-            {
-                var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
-
-                var showings = await _context.Showings
-                    .Include(s => s.Property)
-                    .Include(s => s.Agent)
-                    .Where(s => s.ClientId == userId)
-                    .OrderByDescending(s => s.ScheduledDate)
-                    .Select(s => new
-                    {
-                        s.Id,
-                        s.ScheduledDate,
-                        s.Status,
-                        s.Notes,
-                        PropertyTitle = s.Property!.Title,
-                        PropertyAddress = s.Property.Address,
-                        AgentName = $"{s.Agent!.FirstName} {s.Agent.LastName}",
-                        AgentPhone = s.Agent.PhoneNumber
-                    })
-                    .ToListAsync();
-
-                return Ok(showings);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при получении показов");
-                return StatusCode(500, new { message = "Ошибка сервера" });
-            }
+            int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId);
+            return userId;
         }
+    }
+
+    public class CreateBookingDto
+    {
+        public int PropertyId { get; set; }
+        public BookingType Type { get; set; }
     }
 }

@@ -1,5 +1,4 @@
-﻿using RieltorCRM.Models;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace RieltorCRM.Models
@@ -16,6 +15,8 @@ namespace RieltorCRM.Models
 
     public enum PropertyStatus
     {
+        PendingApproval,
+        ApprovalRejected,
         Available,
         Reserved,
         Sold,
@@ -40,13 +41,11 @@ namespace RieltorCRM.Models
         public PropertyType Type { get; set; }
 
         [Required]
-        public PropertyStatus Status { get; set; } = PropertyStatus.Available;
+        public PropertyStatus Status { get; set; } = PropertyStatus.PendingApproval;
 
         [Required]
-        [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
         public decimal? Area { get; set; }
 
         public int? Rooms { get; set; }
@@ -69,13 +68,14 @@ namespace RieltorCRM.Models
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
 
-        [Column(TypeName = "nvarchar(max)")]
         public string? Features { get; set; }
 
-        [MaxLength(500)]
         public string? ImageUrls { get; set; }
 
-        public int SellerId { get; set; }
+        [MaxLength(500)]
+        public string? RejectionReason { get; set; }
+
+        public int? SellerId { get; set; }
         public int? AgentId { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -1,8 +1,5 @@
-﻿using RieltorCRM.Models;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Reflection.Metadata;
-using System.Transactions;
 
 namespace RieltorCRM.Models
 {
@@ -41,13 +38,10 @@ namespace RieltorCRM.Models
         public DealStatus Status { get; set; } = DealStatus.Draft;
 
         [Required]
-        [Column(TypeName = "decimal(18,2)")]
         public decimal Amount { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
         public decimal? Commission { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
         public decimal? CommissionPercent { get; set; }
 
         [MaxLength(1000)]

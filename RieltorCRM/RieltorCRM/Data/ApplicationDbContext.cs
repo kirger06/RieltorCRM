@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using RieltorCRM.Models;
@@ -18,18 +18,24 @@ namespace RieltorCRM.Data
         public DbSet<Showing> Showings { get; set; } = null!;
         public DbSet<Invoice> Invoices { get; set; } = null!;
         public DbSet<DealHistory> DealHistories { get; set; } = null!;
+        public DbSet<Company> Companies { get; set; } = null!;
+        public DbSet<Booking> Bookings { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
-     
 
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Id).ValueGeneratedOnAdd();
                 entity.ToTable("AspNetUsers");
+
+                entity.HasOne(u => u.Company)
+                    .WithMany()
+                    .HasForeignKey(u => u.CompanyId)
+                    .OnDelete(DeleteBehavior.SetNull)
+                    .IsRequired(false);
             });
 
             modelBuilder.Entity<IdentityRole<int>>(entity =>
@@ -69,8 +75,6 @@ namespace RieltorCRM.Data
                 entity.ToTable("AspNetUserTokens");
             });
 
-    
-
             modelBuilder.Entity<IdentityUserRole<int>>()
                 .HasOne<IdentityRole<int>>()
                 .WithMany()
@@ -107,7 +111,11 @@ namespace RieltorCRM.Data
                 .HasForeignKey(ut => ut.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-
+            modelBuilder.Entity<Company>(entity =>
+            {
+                entity.ToTable("Companies");
+                entity.HasKey(e => e.Id);
+            });
 
             modelBuilder.Entity<Property>(entity =>
             {
@@ -116,8 +124,8 @@ namespace RieltorCRM.Data
                 entity.HasOne(p => p.Seller)
                     .WithMany()
                     .HasForeignKey(p => p.SellerId)
-                    .OnDelete(DeleteBehavior.Restrict)
-                    .IsRequired();
+                    .OnDelete(DeleteBehavior.SetNull)
+                    .IsRequired(false);
 
                 entity.HasOne(p => p.Agent)
                     .WithMany()
@@ -129,6 +137,24 @@ namespace RieltorCRM.Data
                 entity.HasIndex(p => p.Price);
             });
 
+            modelBuilder.Entity<Booking>(entity =>
+            {
+                entity.ToTable("Bookings");
+
+                entity.HasOne(b => b.Property)
+                    .WithMany()
+                    .HasForeignKey(b => b.PropertyId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
+
+                entity.HasOne(b => b.Client)
+                    .WithMany()
+                    .HasForeignKey(b => b.ClientId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
+
+                entity.HasIndex(b => new { b.PropertyId, b.Status });
+            });
 
             modelBuilder.Entity<Deal>(entity =>
             {
@@ -168,8 +194,6 @@ namespace RieltorCRM.Data
                 entity.HasIndex(d => d.Status);
             });
 
-  
-
             modelBuilder.Entity<Transaction>(entity =>
             {
                 entity.ToTable("Transactions");
@@ -195,8 +219,6 @@ namespace RieltorCRM.Data
                 entity.HasIndex(t => t.Status);
             });
 
-       
-
             modelBuilder.Entity<Showing>(entity =>
             {
                 entity.ToTable("Showings");
@@ -219,8 +241,6 @@ namespace RieltorCRM.Data
                     .OnDelete(DeleteBehavior.Restrict)
                     .IsRequired();
             });
-
-       
 
             modelBuilder.Entity<Document>(entity =>
             {
@@ -245,8 +265,6 @@ namespace RieltorCRM.Data
                     .IsRequired(false);
             });
 
-            
-
             modelBuilder.Entity<Invoice>(entity =>
             {
                 entity.ToTable("Invoices");
@@ -264,7 +282,6 @@ namespace RieltorCRM.Data
                     .IsRequired(false);
             });
 
-        
             modelBuilder.Entity<DealHistory>(entity =>
             {
                 entity.ToTable("DealHistories");

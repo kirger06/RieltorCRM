@@ -26,7 +26,7 @@ namespace RieltorCRM.backend.Controllers
         {
             try
             {
-                var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+                int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var userId);
 
                 var properties = await _context.Properties
                     .Include(p => p.Agent)
@@ -65,7 +65,7 @@ namespace RieltorCRM.backend.Controllers
         {
             try
             {
-                var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+                int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var userId);
 
                 var property = new Property
                 {
@@ -106,7 +106,7 @@ namespace RieltorCRM.backend.Controllers
         {
             try
             {
-                var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+                int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var userId);
 
                 var property = await _context.Properties
                     .FirstOrDefaultAsync(p => p.Id == propertyId && p.SellerId == userId);
@@ -146,7 +146,7 @@ namespace RieltorCRM.backend.Controllers
         {
             try
             {
-                var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+                int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var userId);
 
                 var property = await _context.Properties
                     .FirstOrDefaultAsync(p => p.Id == propertyId && p.SellerId == userId);
@@ -173,7 +173,7 @@ namespace RieltorCRM.backend.Controllers
         {
             try
             {
-                var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+                int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var userId);
 
                 var deals = await _context.Deals
                     .Include(d => d.Property)
@@ -191,9 +191,9 @@ namespace RieltorCRM.backend.Controllers
                         d.Commission,
                         d.CreatedAt,
                         d.CompletedAt,
-                        PropertyTitle = d.Property!.Title,
-                        AgentName = $"{d.Agent!.FirstName} {d.Agent.LastName}",
-                        ClientName = $"{d.Client!.FirstName} {d.Client.LastName}"
+                        PropertyTitle = d.Property != null ? d.Property.Title : "",
+                        AgentName = d.Agent != null ? $"{d.Agent.FirstName} {d.Agent.LastName}".Trim() : "",
+                        ClientName = d.Client != null ? $"{d.Client.FirstName} {d.Client.LastName}".Trim() : ""
                     })
                     .ToListAsync();
 
