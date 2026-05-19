@@ -3,14 +3,6 @@ import { useNavigate, Link } from 'react-router-dom'
 import { login as apiLogin } from '../api/auth'
 import { useAuth } from '../context/AuthContext'
 
-const TEST_ACCOUNTS = [
-  { label: 'Администратор', email: 'admin@rioter.ru', password: 'Admin123!' },
-  { label: 'Агент', email: 'agent@rioter.ru', password: 'Agent123!' },
-  { label: 'Клиент', email: 'client@rioter.ru', password: 'Client123!' },
-  { label: 'Менеджер', email: 'manager@rioter.ru', password: 'Manager123!' },
-  { label: 'Бухгалтер', email: 'buh@rioter.ru', password: 'Buh123!' },
-]
-
 export default function Login() {
   const navigate = useNavigate()
   const { login } = useAuth()
@@ -32,12 +24,6 @@ export default function Login() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const fillAccount = (acc: { email: string; password: string }) => {
-    setEmail(acc.email)
-    setPassword(acc.password)
-    setError('')
   }
 
   return (
@@ -78,27 +64,6 @@ export default function Login() {
         <div className="auth-footer">
           Нет аккаунта? <Link to="/register">Зарегистрируйтесь</Link>
         </div>
-
-        <div className="divider" />
-
-        <details>
-          <summary style={{ cursor: 'pointer', fontSize: '0.8rem', color: 'var(--gray-400)', marginBottom: 8 }}>
-            Тестовые аккаунты
-          </summary>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
-            {TEST_ACCOUNTS.map(acc => (
-              <button
-                key={acc.email}
-                type="button"
-                className="btn btn-ghost btn-sm"
-                style={{ justifyContent: 'flex-start', fontSize: '0.8rem' }}
-                onClick={() => fillAccount(acc)}
-              >
-                {acc.label} — {acc.email}
-              </button>
-            ))}
-          </div>
-        </details>
       </div>
     </div>
   )

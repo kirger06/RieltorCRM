@@ -2,18 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace RieltorCRM.DTOs
 {
-    public class LoginDto
-    {
-        [Required]
-        [EmailAddress]
-        public string Email { get; set; } = string.Empty;
-
-        [Required]
-        [MinLength(6)]
-        public string Password { get; set; } = string.Empty;
-    }
-
-    public class RegisterDto
+    public class CreateUserDto
     {
         [Required]
         [EmailAddress]
@@ -37,9 +26,6 @@ namespace RieltorCRM.DTOs
         [Phone]
         public string? PhoneNumber { get; set; }
 
-        public bool RegisterAsManager { get; set; } = false;
-
-        [MaxLength(200)]
-        public string? CompanyName { get; set; }
+        public Models.UserRole Role { get; set; }
     }
 }

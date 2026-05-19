@@ -1,10 +1,10 @@
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RieltorCRM.Data;
 using RieltorCRM.Models;
 using System.Security.Claims;
-using System.Text;
 
 namespace RieltorCRM.Controllers
 {
@@ -133,36 +133,99 @@ namespace RieltorCRM.Controllers
                 .OrderByDescending(b => b.CreatedAt)
                 .ToListAsync();
 
-            var csv = new StringBuilder();
-            csv.AppendLine("ID,Тип,Статус,Дата,Клиент,Email клиента,Телефон клиента,Объект,Адрес,Цена,Агент");
+            using var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet("Бронирования");
 
-            foreach (var b in bookings)
+            var headers = new[]
             {
-                var line = string.Join(",",
-                    b.Id,
-                    b.Type.ToString(),
-                    b.Status.ToString(),
-                    b.CreatedAt.ToString("yyyy-MM-dd HH:mm"),
-                    EscapeCsv($"{b.Client?.FirstName} {b.Client?.LastName}"),
-                    EscapeCsv(b.Client?.Email ?? ""),
-                    EscapeCsv(b.Client?.PhoneNumber ?? ""),
-                    EscapeCsv(b.Property?.Title ?? ""),
-                    EscapeCsv(b.Property?.Address ?? ""),
-                    b.Property?.Price.ToString("F2") ?? "",
-                    EscapeCsv(b.Property?.Agent != null ? $"{b.Property.Agent.FirstName} {b.Property.Agent.LastName}" : "")
-                );
-                csv.AppendLine(line);
+                "ID", "Тип", "Статус", "Дата", "Клиент",
+                "Email клиента", "Телефон клиента", "Объект", "Адрес", "Цена", "Агент"
+            };
+
+            for (int col = 1; col <= headers.Length; col++)
+            {
+                var cell = ws.Cell(1, col);
+                cell.Value = headers[col - 1];
+                cell.Style.Font.Bold = true;
+                cell.Style.Font.FontColor = XLColor.White;
+                cell.Style.Fill.BackgroundColor = XLColor.FromArgb(26, 115, 232);
+                cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             }
 
-            var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv.ToString())).ToArray();
-            return File(bytes, "text/csv", $"bookings_{DateTime.UtcNow:yyyyMMdd}.csv");
+            int row = 2;
+            foreach (var b in bookings)
+            {
+                ws.Cell(row, 1).Value = b.Id;
+                ws.Cell(row, 2).Value = b.Type.ToString();
+                ws.Cell(row, 3).Value = b.Status.ToString();
+                ws.Cell(row, 4).Value = b.CreatedAt.ToString("yyyy-MM-dd HH:mm");
+                ws.Cell(row, 5).Value = $"{b.Client?.FirstName} {b.Client?.LastName}".Trim();
+                ws.Cell(row, 6).Value = b.Client?.Email ?? "";
+                ws.Cell(row, 7).Value = b.Client?.PhoneNumber ?? "";
+                ws.Cell(row, 8).Value = b.Property?.Title ?? "";
+                ws.Cell(row, 9).Value = b.Property?.Address ?? "";
+                ws.Cell(row, 10).Value = b.Property?.Price ?? 0;
+                ws.Cell(row, 10).Style.NumberFormat.Format = "#,##0.00 ₽";
+                ws.Cell(row, 11).Value = b.Property?.Agent != null
+                    ? $"{b.Property.Agent.FirstName} {b.Property.Agent.LastName}"
+                    : "";
+
+                if (row % 2 == 0)
+                    ws.Row(row).Style.Fill.BackgroundColor = XLColor.FromArgb(248, 249, 250);
+
+                row++;
+            }
+
+            ws.Columns().AdjustToContents();
+            ws.SheetView.FreezeRows(1);
+
+            using var ms = new MemoryStream();
+            wb.SaveAs(ms);
+
+            return File(
+                ms.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"bookings_{DateTime.UtcNow:yyyyMMdd}.xlsx"
+            );
         }
 
-        private static string EscapeCsv(string value)
+        [HttpGet("bookings/data")]
+        public async Task<IActionResult> GetBookingsData()
         {
-            if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
-                return $"\"{value.Replace("\"", "\"\"")}\"";
-            return value;
+            var companyId = await GetCurrentCompanyId();
+            if (companyId == null) return Unauthorized("Бухгалтер не привязан к компании");
+
+            var agentIds = await _context.Users
+                .Where(u => u.CompanyId == companyId && u.Role == UserRole.Agent)
+                .Select(u => u.Id)
+                .ToListAsync();
+
+            var bookings = await _context.Bookings
+                .Include(b => b.Client)
+                .Include(b => b.Property)
+                    .ThenInclude(p => p!.Agent)
+                .Where(b => b.Property!.AgentId.HasValue && agentIds.Contains(b.Property.AgentId.Value))
+                .OrderByDescending(b => b.CreatedAt)
+                .ToListAsync();
+
+            var result = bookings.Select(b => new
+            {
+                b.Id,
+                Type = b.Type.ToString(),
+                Status = b.Status.ToString(),
+                Date = b.CreatedAt.ToString("dd.MM.yyyy HH:mm"),
+                ClientName = $"{b.Client?.FirstName} {b.Client?.LastName}".Trim(),
+                ClientEmail = b.Client?.Email ?? "",
+                ClientPhone = b.Client?.PhoneNumber ?? "",
+                PropertyTitle = b.Property?.Title ?? "",
+                PropertyAddress = b.Property?.Address ?? "",
+                Price = b.Property?.Price ?? 0,
+                AgentName = b.Property?.Agent != null
+                    ? $"{b.Property.Agent.FirstName} {b.Property.Agent.LastName}"
+                    : ""
+            });
+
+            return Ok(result);
         }
 
         private int GetCurrentUserId()
